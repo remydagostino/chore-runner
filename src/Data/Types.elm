@@ -2,8 +2,9 @@ module Data.Types exposing (..)
 
 import Time
 
-type alias InitFlags = 
-    { currentTime: Int }
+
+type alias InitFlags =
+    { currentTime : Int }
 
 
 type PageData
@@ -12,7 +13,7 @@ type PageData
 
 
 type alias AppState =
-    { currentTime: Time.Posix
+    { currentTime : Time.Posix
     , chores : List Chore
     , attempts : List ChoreAttempt
     , pageData : PageData
@@ -22,6 +23,7 @@ type alias AppState =
 type AppMsg
     = CreateChoreAttempt Chore
     | NavigateToAttempt ChoreAttempt
+    | ClockTick Time.Posix
     | NoMsg
 
 
@@ -77,22 +79,21 @@ type alias ChoreAttempt =
     }
 
 
-type ChoreStepStatus 
+type ChoreStepStatus
     = CompletedStep
     | SkippedStep
     | CurrentStep
+    | IdleStep
 
 
 type alias ChoreStepState =
-    { choreStep: ChoreStep
-    , secondsRemaining: Int
-    , status: ChoreStepStatus
+    { choreStep : ChoreStep
+    , secondsRemaining : Int
+    , status : ChoreStepStatus
     }
 
 
-type alias ChoreAttemptState = 
-    { elapsedTime: Int
-    , stepStatus: List ChoreStepState
+type alias ChoreAttemptState =
+    { elapsedSeconds : Int
+    , stepStates : List ChoreStepState
     }
-
-

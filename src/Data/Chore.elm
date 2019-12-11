@@ -1,12 +1,47 @@
 module Data.Chore exposing (..)
 
 import Data.Types as T exposing (Chore, ChoreAttempt, ChoreAttemptState)
+import Time
 
-currentAttemptStatus : ChoreAttempt -> ChoreAttemptState
-currentAttemptStatus choreAttempt =
-    { elapsedTime = 0
-    , stepStatus = []
-    } 
+
+currentAttemptState : Time.Posix -> ChoreAttempt -> ChoreAttemptState
+currentAttemptState currentTime choreAttempt =
+    let
+        currentTimeMillis =
+            Time.posixToMillis currentTime
+
+        elapsedMillis =
+            currentTimeMillis - Time.posixToMillis choreAttempt.createdAt
+
+        currentStepIndex =
+            List.foldl
+                (\action lastStepNum ->
+                    case action of
+                        T.MoveToStep moveNum ->
+                            moveNum
+
+                        _ ->
+                            lastStepNum
+                )
+                0
+                choreAttempt.log
+    in
+    { elapsedSeconds = elapsedMillis // 1000
+    , stepStates =
+        List.indexedMap
+            (\index choreStep ->
+                { choreStep = choreStep
+                , secondsRemaining = 1
+                , status =
+                    if index == currentStepIndex then
+                        T.CurrentStep
+
+                    else
+                        T.IdleStep
+                }
+            )
+            choreAttempt.chore.steps
+    }
 
 
 standardSpeedIncentives =
@@ -55,5 +90,3 @@ basicChores =
             ]
       }
     ]
-
-

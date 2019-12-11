@@ -1,21 +1,21 @@
 module Main exposing (..)
 
 import Browser
-import Data.Types as T
 import Data.Chore
-import Pages.ChoreAttempt
-import Pages.ChoreList
+import Data.Types as T
 import Html
 import Html.Events
+import Pages.ChoreAttempt
+import Pages.ChoreList
 import Time
 
 
 main =
-    Browser.element 
+    Browser.element
         { init = init
         , subscriptions = subscriptions
         , update = update
-        , view = view 
+        , view = view
         }
 
 
@@ -28,22 +28,24 @@ initialState initFlags =
     }
 
 
-init : T.InitFlags -> (T.AppState, Cmd T.AppMsg)
-init initFlags = 
-    (initialState initFlags, Cmd.none)
+init : T.InitFlags -> ( T.AppState, Cmd T.AppMsg )
+init initFlags =
+    ( initialState initFlags, Cmd.none )
 
 
 subscriptions : T.AppState -> Sub T.AppMsg
-subscriptions model = 
-    Sub.none
+subscriptions model =
+    Time.every 1000 T.ClockTick
+
 
 view : T.AppState -> Html.Html T.AppMsg
 view model =
     case model.pageData of
         T.ChoreListingPage ->
             Pages.ChoreList.mainView model.chores model.attempts
+
         T.ChoreAttemptPage attempt ->
-            Pages.ChoreAttempt.mainView attempt
+            Pages.ChoreAttempt.mainView model.currentTime attempt
 
 
 makeAttemptFromChore : Time.Posix -> T.Chore -> T.ChoreAttempt
@@ -56,11 +58,17 @@ makeAttemptFromChore currentTime chore =
     }
 
 
-update : T.AppMsg -> T.AppState -> (T.AppState, Cmd T.AppMsg)
+update : T.AppMsg -> T.AppState -> ( T.AppState, Cmd T.AppMsg )
 update msg model =
     case msg of
         T.CreateChoreAttempt chore ->
-            ({ model | attempts = (makeAttemptFromChore model.currentTime chore) :: model.attempts }, Cmd.none)
+            ( { model | attempts = makeAttemptFromChore model.currentTime chore :: model.attempts }, Cmd.none )
+
         T.NavigateToAttempt attempt ->
-            ({ model | pageData = T.ChoreAttemptPage attempt }, Cmd.none)
-        T.NoMsg -> (model, Cmd.none)
+            ( { model | pageData = T.ChoreAttemptPage attempt }, Cmd.none )
+
+        T.ClockTick currentTime ->
+            ( { model | currentTime = currentTime }, Cmd.none )
+
+        T.NoMsg ->
+            ( model, Cmd.none )

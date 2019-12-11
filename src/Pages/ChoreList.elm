@@ -1,13 +1,14 @@
 module Pages.ChoreList exposing (..)
 
-import Data.Types as T
 import Data.Chore
+import Data.Types as T
 import Html
 import Html.Events
 import Time
 
+
 mainView : List T.Chore -> List T.ChoreAttempt -> Html.Html T.AppMsg
-mainView chores attempts = 
+mainView chores attempts =
     Html.div []
         [ Html.ol [] <|
             List.map (\chore -> choreView chore attempts) chores
@@ -25,13 +26,12 @@ choreView chore attempts =
         matchingAttempts ->
             Html.li []
                 [ Html.text chore.name
-                , Html.ul [] (List.map choreAttemptView matchingAttempts) 
+                , Html.ul [] (List.map choreAttemptView matchingAttempts)
                 ]
 
 
 choreAttemptView : T.ChoreAttempt -> Html.Html T.AppMsg
-choreAttemptView attempt = 
-    Html.li 
-        [ Html.Events.onClick (T.NavigateToAttempt attempt) ] 
+choreAttemptView attempt =
+    Html.li
+        [ Html.Events.onClick (T.NavigateToAttempt attempt) ]
         [ Html.text "In progress" ]
-
