@@ -3,11 +3,15 @@ module Main exposing (..)
 import Browser
 import Data.Chore
 import Data.Types as T
-import Html
+import Html as H
 import Html.Events
 import Pages.ChoreAttempt
 import Pages.ChoreList
 import Time
+
+
+
+-- TODO: Generate IDs in JS and send through ports to elm
 
 
 main =
@@ -35,17 +39,29 @@ init initFlags =
 
 subscriptions : T.AppState -> Sub T.AppMsg
 subscriptions model =
-    Time.every 1000 T.ClockTick
+    Time.every 1000 T.TickClock
 
 
-view : T.AppState -> Html.Html T.AppMsg
+view : T.AppState -> H.Html T.AppMsg
 view model =
     case model.pageData of
         T.ChoreListingPage ->
             Pages.ChoreList.mainView model.chores model.attempts
 
         T.ChoreAttemptPage attempt ->
-            Pages.ChoreAttempt.mainView model.currentTime attempt
+            maybeChoreAttemptPage model attempt (Pages.ChoreAttempt.mainView model.currentTime)
+
+
+maybeChoreAttemptPage : T.AppState -> T.ChoreAttemptId -> (T.ChoreAttempt -> H.Html T.AppMsg) -> H.Html T.AppMsg
+maybeChoreAttemptPage model attemptId pageView =
+    let
+        matchingAttempts =
+            List.filter (\attempt -> attempt.id == attemptId) model.attempts
+
+        emptyPage =
+            H.div [] [ H.text "Can't find that chore attempt" ]
+    in
+    Maybe.withDefault emptyPage (List.head matchingAttempts |> Maybe.map pageView)
 
 
 makeAttemptFromChore : Time.Posix -> T.Chore -> T.ChoreAttempt
@@ -65,10 +81,15 @@ update msg model =
             ( { model | attempts = makeAttemptFromChore model.currentTime chore :: model.attempts }, Cmd.none )
 
         T.NavigateToAttempt attempt ->
-            ( { model | pageData = T.ChoreAttemptPage attempt }, Cmd.none )
+            ( { model | pageData = T.ChoreAttemptPage attempt.id }, Cmd.none )
 
-        T.ClockTick currentTime ->
+        T.TickClock currentTime ->
             ( { model | currentTime = currentTime }, Cmd.none )
 
-        T.NoMsg ->
+        T.AppendChoreAction choreAction ->
             ( model, Cmd.none )
+
+
+appendAttemptChoreAction : T.ChoreAction -> T.AppState -> T.AppState
+appendAttemptChoreAction choreAction model =
+    model

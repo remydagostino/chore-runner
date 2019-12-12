@@ -12,11 +12,20 @@ mainView currentTime attempt =
     let
         attemptState =
             Data.Chore.currentAttemptState currentTime attempt
+
+        currentSteps =
+            List.filter
+                (\stepState -> stepState.status == T.CurrentStep)
+                attemptState.stepStates
+
+        firstCurrentStep =
+            List.head currentSteps
     in
     Html.div []
         [ Html.h3 [] [ Html.text ("In progress: " ++ attempt.chore.name) ]
         , Html.h4 [] [ Html.text (String.fromInt attemptState.elapsedSeconds) ]
         , stepListView attemptState.stepStates
+        , stepDetailView firstCurrentStep
         ]
 
 
@@ -35,4 +44,12 @@ stepListItemView state =
 
             _ ->
                 Html.text ""
+        ]
+
+
+stepDetailView : Maybe T.ChoreStepState -> Html.Html T.AppMsg
+stepDetailView state =
+    Html.div []
+        [ Html.button [] [ Html.text "Skip" ]
+        , Html.button [] [ Html.text "Done!" ]
         ]

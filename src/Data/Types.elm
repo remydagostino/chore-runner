@@ -7,9 +7,17 @@ type alias InitFlags =
     { currentTime : Int }
 
 
+type alias ChoreId =
+    String
+
+
+type alias ChoreAttemptId =
+    String
+
+
 type PageData
     = ChoreListingPage
-    | ChoreAttemptPage ChoreAttempt
+    | ChoreAttemptPage ChoreAttemptId
 
 
 type alias AppState =
@@ -23,8 +31,8 @@ type alias AppState =
 type AppMsg
     = CreateChoreAttempt Chore
     | NavigateToAttempt ChoreAttempt
-    | ClockTick Time.Posix
-    | NoMsg
+    | AppendChoreAction ChoreAction
+    | TickClock Time.Posix
 
 
 type ChoreStatus
@@ -63,7 +71,7 @@ type alias ChoreStep =
 
 
 type alias Chore =
-    { id : String
+    { id : ChoreId
     , name : String
     , reward : ChoreReward
     , steps : List ChoreStep
@@ -71,7 +79,7 @@ type alias Chore =
 
 
 type alias ChoreAttempt =
-    { id : String
+    { id : ChoreAttemptId
     , chore : Chore
     , status : ChoreStatus
     , log : List ChoreAction
