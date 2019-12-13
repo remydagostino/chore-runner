@@ -86,10 +86,33 @@ update msg model =
         T.TickClock currentTime ->
             ( { model | currentTime = currentTime }, Cmd.none )
 
-        T.AppendChoreAction choreAction ->
-            ( model, Cmd.none )
+        T.AppendChoreAction choreAttempt newActions ->
+            ( appendAttemptChoreAction model newActions choreAttempt.id, Cmd.none )
 
 
-appendAttemptChoreAction : T.ChoreAction -> T.AppState -> T.AppState
-appendAttemptChoreAction choreAction model =
-    model
+appendAttemptChoreAction : T.AppState -> List T.ChoreAction -> T.ChoreAttemptId -> T.AppState
+appendAttemptChoreAction model newActions attemptId =
+    let
+        timestampedLogEntries =
+            List.map (Tuple.pair model.currentTime) newActions
+    in
+    updateAttemptById
+        model
+        (\attempt -> { attempt | log = List.append attempt.log timestampedLogEntries })
+        attemptId
+
+
+updateAttemptById : T.AppState -> (T.ChoreAttempt -> T.ChoreAttempt) -> T.ChoreAttemptId -> T.AppState
+updateAttemptById model updateFn id =
+    { model
+        | attempts =
+            List.map
+                (\attempt ->
+                    if attempt.id == id then
+                        updateFn attempt
+
+                    else
+                        attempt
+                )
+                model.attempts
+    }

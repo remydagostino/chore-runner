@@ -23,7 +23,7 @@ type PageData
 type alias AppState =
     { currentTime : Time.Posix
     , chores : List Chore
-    , attempts : List ChoreAttempt
+    , attempts : List ChoreAttempt -- should probably be Array
     , pageData : PageData
     }
 
@@ -31,7 +31,7 @@ type alias AppState =
 type AppMsg
     = CreateChoreAttempt Chore
     | NavigateToAttempt ChoreAttempt
-    | AppendChoreAction ChoreAction
+    | AppendChoreAction ChoreAttempt (List ChoreAction)
     | TickClock Time.Posix
 
 
@@ -59,8 +59,12 @@ type ChoreIncentive
 
 type ChoreAction
     = MoveToStep Int
-    | CompleteStep ChoreTime
-    | SkipStep ChoreTime
+    | CompleteStep
+    | SkipStep
+
+
+type alias ChoreLogEntry =
+    ( Time.Posix, ChoreAction )
 
 
 type alias ChoreStep =
@@ -82,7 +86,7 @@ type alias ChoreAttempt =
     { id : ChoreAttemptId
     , chore : Chore
     , status : ChoreStatus
-    , log : List ChoreAction
+    , log : List ChoreLogEntry
     , createdAt : Time.Posix
     }
 
@@ -96,6 +100,7 @@ type ChoreStepStatus
 
 type alias ChoreStepState =
     { choreStep : ChoreStep
+    , stepIndex : Int
     , secondsRemaining : Int
     , status : ChoreStepStatus
     }

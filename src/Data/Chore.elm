@@ -24,13 +24,14 @@ currentAttemptState currentTime choreAttempt =
                             lastStepNum
                 )
                 0
-                choreAttempt.log
+                (List.map Tuple.second choreAttempt.log)
     in
     { elapsedSeconds = elapsedMillis // 1000
     , stepStates =
         List.indexedMap
             (\index choreStep ->
                 { choreStep = choreStep
+                , stepIndex = index
                 , secondsRemaining = 1
                 , status =
                     if index == currentStepIndex then
