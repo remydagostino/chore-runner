@@ -79,6 +79,7 @@ type alias Chore =
     , name : String
     , reward : ChoreReward
     , steps : List ChoreStep
+    , durationInSeconds : Maybe Int
     }
 
 
@@ -101,7 +102,7 @@ type ChoreStepStatus
 type alias ChoreStepState =
     { choreStep : ChoreStep
     , stepIndex : Int
-    , secondsRemaining : Int
+    , secondsRemaining : Maybe Int
     , status : ChoreStepStatus
     }
 
