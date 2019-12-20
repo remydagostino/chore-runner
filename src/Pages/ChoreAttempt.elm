@@ -39,17 +39,17 @@ stepListItemView attemptState stepState =
 
             _ ->
                 H.text ""
-
         , case stepState.millisRemaining of
             Just millis ->
                 H.text (" [" ++ String.fromInt (millis // 1000) ++ "s]")
 
             Nothing ->
                 H.text ""
+        , if attemptState.currentStepIndex == stepState.stepIndex then
+            H.text " <="
 
-        , if attemptState.currentStepIndex == stepState.stepIndex 
-            then H.text " <="
-            else H.text ""
+          else
+            H.text ""
         ]
 
 

@@ -1,8 +1,9 @@
 module Data.Chore exposing (..)
 
+import Array as Arr exposing (Array)
 import Data.Types as T exposing (Chore, ChoreAttempt, ChoreAttemptState)
 import Time exposing (posixToMillis)
-import Array as Arr exposing (Array)
+
 
 type alias FoldedLog =
     { millisSpentPerStep : Array Int
@@ -11,13 +12,15 @@ type alias FoldedLog =
     , lastUpdated : Time.Posix
     }
 
+
 aGetWithDefault : a -> Int -> Array a -> a
 aGetWithDefault default index arr =
     Maybe.withDefault default (Arr.get index arr)
 
+
 alterArrayItem : Int -> (Maybe a -> a) -> Array a -> Array a
-alterArrayItem index update arr = 
-    Arr.set 
+alterArrayItem index update arr =
+    Arr.set
         index
         (update (Arr.get index arr))
         arr
@@ -25,7 +28,7 @@ alterArrayItem index update arr =
 
 millisBetween : Time.Posix -> Time.Posix -> Int
 millisBetween from to =
-    (posixToMillis to) - (posixToMillis from)
+    posixToMillis to - posixToMillis from
 
 
 currentAttemptState : Time.Posix -> ChoreAttempt -> ChoreAttemptState
@@ -54,25 +57,23 @@ choreStepToState choreAttempt foldedLog stepIndex choreStep =
                 Nothing ->
                     Nothing
     in
-    { choreStep = 
+    { choreStep =
         choreStep
-
-    , stepIndex = 
+    , stepIndex =
         stepIndex
-
-    , millisRemaining = 
+    , millisRemaining =
         Maybe.map
-            (\millis -> max 0 (millis - (aGetWithDefault 0 stepIndex foldedLog.millisSpentPerStep)))
-            durationInMillis 
-
-    , status = 
+            (\millis -> max 0 (millis - aGetWithDefault 0 stepIndex foldedLog.millisSpentPerStep))
+            durationInMillis
+    , status =
         aGetWithDefault T.IdleStep stepIndex foldedLog.statusPerStep
     }
+
 
 foldForwardLog : Time.Posix -> T.ChoreAttempt -> FoldedLog
 foldForwardLog currentTime choreAttempt =
     let
-        numberOfSteps = 
+        numberOfSteps =
             List.length choreAttempt.chore.steps
 
         foldedLog =
@@ -85,31 +86,29 @@ foldForwardLog currentTime choreAttempt =
                 }
                 choreAttempt.log
 
-        millisUntilNow = 
+        millisUntilNow =
             millisBetween foldedLog.lastUpdated currentTime
 
-        updatedWithCurrentTime = 
-            { foldedLog 
-                | lastUpdated = currentTime 
+        updatedWithCurrentTime =
+            { foldedLog
+                | lastUpdated = currentTime
                 , millisSpentPerStep =
                     alterArrayItem
                         foldedLog.currentStepIndex
-                        (\millis -> (Maybe.withDefault 0 millis) + millisUntilNow)
+                        (\millis -> Maybe.withDefault 0 millis + millisUntilNow)
                         foldedLog.millisSpentPerStep
-
             }
     in
     updatedWithCurrentTime
 
 
-
 updateStateWithLog : T.ChoreLogEntry -> FoldedLog -> FoldedLog
 updateStateWithLog ( logTime, action ) state =
     let
-        millisSpentInCurrentStep = 
+        millisSpentInCurrentStep =
             millisBetween state.lastUpdated logTime
 
-        changeToCurrentStatus = 
+        changeToCurrentStatus =
             case action of
                 T.MoveToStep moveToStepNum ->
                     Nothing
@@ -120,7 +119,7 @@ updateStateWithLog ( logTime, action ) state =
                 T.SkipStep ->
                     Just T.SkippedStep
 
-        changeToCurrentStepIndex = 
+        changeToCurrentStepIndex =
             case action of
                 T.MoveToStep moveToStepNum ->
                     Just moveToStepNum
@@ -128,27 +127,24 @@ updateStateWithLog ( logTime, action ) state =
                 _ ->
                     Nothing
     in
-    { millisSpentPerStep = 
+    { millisSpentPerStep =
         alterArrayItem
             state.currentStepIndex
-            (\millis -> (Maybe.withDefault 0 millis) + millisSpentInCurrentStep)
+            (\millis -> Maybe.withDefault 0 millis + millisSpentInCurrentStep)
             state.millisSpentPerStep
-
-    , statusPerStep = 
+    , statusPerStep =
         case changeToCurrentStatus of
             Just newStatus ->
                 Arr.set
-                    state.currentStepIndex 
+                    state.currentStepIndex
                     newStatus
                     state.statusPerStep
 
-            Nothing -> 
+            Nothing ->
                 state.statusPerStep
-
-    , currentStepIndex = 
+    , currentStepIndex =
         Maybe.withDefault state.currentStepIndex changeToCurrentStepIndex
-
-    , lastUpdated = 
+    , lastUpdated =
         logTime
     }
 
