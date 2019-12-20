@@ -41,13 +41,13 @@ type ChoreStatus
 
 
 type ChoreTime
-    = DurationInSeconds Int
+    = DurationInMillis Int
     | PercentageOfTotal Int
 
 
 type ChoreReward
     = RewardStars Int
-    | MoneyReward Float
+    | MoneyReward Int
     | NoReward
 
 
@@ -79,7 +79,7 @@ type alias Chore =
     , name : String
     , reward : ChoreReward
     , steps : List ChoreStep
-    , durationInSeconds : Maybe Int
+    , durationInMillis : Maybe Int
     }
 
 
@@ -95,19 +95,19 @@ type alias ChoreAttempt =
 type ChoreStepStatus
     = CompletedStep
     | SkippedStep
-    | CurrentStep
     | IdleStep
 
 
 type alias ChoreStepState =
     { choreStep : ChoreStep
     , stepIndex : Int
-    , secondsRemaining : Maybe Int
+    , millisRemaining : Maybe Int
     , status : ChoreStepStatus
     }
 
 
 type alias ChoreAttemptState =
-    { elapsedSeconds : Int
+    { elapsedMillis : Int
     , stepStates : List ChoreStepState
+    , currentStepIndex : Int
     }

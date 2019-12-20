@@ -15,48 +15,51 @@ mainView currentTime attempt =
     in
     H.div []
         [ H.h3 [] [ H.text ("In progress: " ++ attempt.chore.name) ]
-        , H.h4 [] [ H.text (String.fromInt attemptState.elapsedSeconds) ]
-        , stepListView attemptState.stepStates
+        , H.h4 [] [ H.text (String.fromInt (attemptState.elapsedMillis // 1000)) ]
+        , stepListView attemptState
         , stepDetailView attempt attemptState
         ]
 
 
-stepListView : List T.ChoreStepState -> H.Html T.AppMsg
-stepListView stepStates =
-    H.ol [] (List.map (\state -> H.li [] [ stepListItemView state ]) stepStates)
+stepListView : T.ChoreAttemptState -> H.Html T.AppMsg
+stepListView attemptState =
+    H.ol [] (List.map (\stepState -> H.li [] [ stepListItemView attemptState stepState ]) attemptState.stepStates)
 
 
-stepListItemView : T.ChoreStepState -> H.Html T.AppMsg
-stepListItemView state =
+stepListItemView : T.ChoreAttemptState -> T.ChoreStepState -> H.Html T.AppMsg
+stepListItemView attemptState stepState =
     H.div []
-        [ H.text state.choreStep.name
-        , case state.status of
-            T.CurrentStep ->
-                H.text " [current]"
+        [ H.text stepState.choreStep.name
+        , case stepState.status of
+            T.CompletedStep ->
+                H.text " (complete)"
+
+            T.SkippedStep ->
+                H.text " (skipped)"
 
             _ ->
                 H.text ""
+
+        , case stepState.millisRemaining of
+            Just millis ->
+                H.text (" [" ++ String.fromInt (millis // 1000) ++ "s]")
+
+            Nothing ->
+                H.text ""
+
+        , if attemptState.currentStepIndex == stepState.stepIndex 
+            then H.text " <="
+            else H.text ""
         ]
 
 
 stepDetailView : T.ChoreAttempt -> T.ChoreAttemptState -> H.Html T.AppMsg
 stepDetailView attempt attemptState =
     let
-        firstCurrentStep : Maybe T.ChoreStepState
-        firstCurrentStep =
-            List.head <|
-                List.filter
-                    (\stepState -> stepState.status == T.CurrentStep)
-                    attemptState.stepStates
-
-        currentStepIndex : Int
-        currentStepIndex =
-            Maybe.withDefault 0 <| Maybe.map .stepIndex firstCurrentStep
-
         incompleteSteps : List T.ChoreStepState
         incompleteSteps =
             List.filter
-                (\s -> s.status /= T.CurrentStep && s.stepIndex > currentStepIndex)
+                (\s -> s.stepIndex > attemptState.currentStepIndex)
                 attemptState.stepStates
 
         nextStepIndex : Maybe Int
