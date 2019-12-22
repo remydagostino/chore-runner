@@ -8,11 +8,7 @@ import Html.Events
 import Pages.ChoreAttempt
 import Pages.ChoreList
 import Time
-
-
-
--- TODO: Generate IDs in JS and send through ports to elm
-
+import Ports.Db as Db
 
 main =
     Browser.element
@@ -39,7 +35,10 @@ init initFlags =
 
 subscriptions : T.AppState -> Sub T.AppMsg
 subscriptions model =
-    Time.every 1000 T.TickClock
+    Sub.batch 
+        [ Time.every 1000 T.TickClock
+        , Db.onChoreAttempedAdded
+        ]
 
 
 view : T.AppState -> H.Html T.AppMsg
@@ -64,21 +63,11 @@ maybeChoreAttemptPage model attemptId pageView =
     Maybe.withDefault emptyPage (List.head matchingAttempts |> Maybe.map pageView)
 
 
-makeAttemptFromChore : Time.Posix -> T.Chore -> T.ChoreAttempt
-makeAttemptFromChore currentTime chore =
-    { id = "xxx"
-    , chore = chore
-    , status = T.InProgress
-    , log = []
-    , createdAt = currentTime
-    }
-
-
 update : T.AppMsg -> T.AppState -> ( T.AppState, Cmd T.AppMsg )
 update msg model =
     case msg of
         T.CreateChoreAttempt chore ->
-            ( { model | attempts = makeAttemptFromChore model.currentTime chore :: model.attempts }, Cmd.none )
+            ( model, Db.makeAttemptFromChore model.currentTime chore)
 
         T.NavigateToAttempt attempt ->
             ( { model | pageData = T.ChoreAttemptPage attempt.id }, Cmd.none )

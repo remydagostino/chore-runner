@@ -30,6 +30,7 @@ type alias AppState =
 
 type AppMsg
     = CreateChoreAttempt Chore
+    | NewChoreAttempt ChoreAttempt
     | NavigateToAttempt ChoreAttempt
     | AppendChoreAction ChoreAttempt (List ChoreAction)
     | TickClock Time.Posix
