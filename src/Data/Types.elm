@@ -34,6 +34,7 @@ type AppMsg
     | NavigateToAttempt ChoreAttempt
     | AppendChoreAction ChoreAttempt (List ChoreAction)
     | TickClock Time.Posix
+    | BigWhoopsie String
 
 
 type ChoreStatus

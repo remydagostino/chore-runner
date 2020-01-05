@@ -37,7 +37,7 @@ subscriptions : T.AppState -> Sub T.AppMsg
 subscriptions model =
     Sub.batch 
         [ Time.every 1000 T.TickClock
-        , Db.onChoreAttempedAdded
+        , Db.onChoreAttemptAdded
         ]
 
 
@@ -67,7 +67,10 @@ update : T.AppMsg -> T.AppState -> ( T.AppState, Cmd T.AppMsg )
 update msg model =
     case msg of
         T.CreateChoreAttempt chore ->
-            ( model, Db.makeAttemptFromChore model.currentTime chore)
+            ( model, Db.makeAttemptFromChore model.currentTime chore )
+
+        T.NewChoreAttempt choreAttempt ->
+            ( { model | attempts = choreAttempt :: model.attempts }, Cmd.none )
 
         T.NavigateToAttempt attempt ->
             ( { model | pageData = T.ChoreAttemptPage attempt.id }, Cmd.none )
@@ -77,6 +80,9 @@ update msg model =
 
         T.AppendChoreAction choreAttempt newActions ->
             ( appendAttemptChoreAction model newActions choreAttempt.id, Cmd.none )
+
+        T.BigWhoopsie err ->
+            ( model, Cmd.none )
 
 
 appendAttemptChoreAction : T.AppState -> List T.ChoreAction -> T.ChoreAttemptId -> T.AppState

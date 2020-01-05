@@ -6,44 +6,100 @@ import Json.Decode as D exposing (Decoder(..))
 import Time
 
 
-port pushChoreAttempt : E.Value -> Cmd T.AppMsg
-port choreAttemptAdded : (E.Value -> T.AppMsg) -> Sub T.AppMsg
+port pushChoreAttempt : E.Value -> Cmd msg
+port choreAttemptAdded : (E.Value -> msg) -> Sub msg
+
+
+posixToMillisDecoder : Decoder Time.Posix
+posixToMillisDecoder =
+    D.map Time.millisToPosix D.int 
 
 
 encodeChoreReward : T.ChoreReward -> E.Value
 encodeChoreReward reward =
     case reward of 
-        RewardStars stars ->
+        T.RewardStars stars ->
             E.object [("type", E.string "RewardStars"), ("amount", E.int stars)]
 
-        MoneyReward cents ->
+        T.MoneyReward cents ->
             E.object [("type", E.string "MoneyReward"), ("amount", E.int cents)]
 
-        NoReward ->
+        T.NoReward ->
             E.object [("type", E.string "NoReward")]
+
+
+choreRewardDecoder : Decoder T.ChoreReward
+choreRewardDecoder =
+    D.field "type" D.string |> D.andThen
+        (\choreRewardType -> case choreRewardType of
+            "RewardStars" ->
+                D.map T.RewardStars (D.field "amount" D.int)
+
+            "MoneyReward" ->
+                D.map T.MoneyReward (D.field "amount" D.int)
+
+            "NoReward" ->
+                D.succeed T.NoReward
+
+            _ ->
+                D.fail "Unknown chore reward type"
+        )
 
 
 encodeIncentive : T.ChoreIncentive -> E.Value
 encodeIncentive incentive =
     case incentive of
-        CompletionIncentive reward ->
+        T.CompletionIncentive reward ->
             E.object [("type", E.string "CompletionIncentive"), ("reward", encodeChoreReward reward)]
 
-        HalfTimeIncentive reward ->
+        T.HalfTimeIncentive reward ->
             E.object [("type", E.string "HalfTimeIncentive"), ("reward", encodeChoreReward reward)]
 
-        QuarterTimeIncentive reward ->
+        T.QuarterTimeIncentive reward ->
             E.object [("type", E.string "QuarterTimeIncentive"), ("reward", encodeChoreReward reward)]
+
+
+incentiveDecoder : Decoder T.ChoreIncentive
+incentiveDecoder =
+    D.field "type" D.string |> D.andThen
+        (\incentiveType -> case incentiveType of
+            "CompletionIncentive" ->
+                D.map T.CompletionIncentive (D.field "reward" choreRewardDecoder)
+
+            "HalfTimeIncentive" ->
+                D.map T.HalfTimeIncentive (D.field "reward" choreRewardDecoder)
+
+            "QuarterTimeIncentive" ->
+                D.map T.QuarterTimeIncentive (D.field "reward" choreRewardDecoder)
+
+            _ ->
+                D.fail "Unknown chore incentive type"
+        )
 
 
 encodeChoreTime : T.ChoreTime -> E.Value
 encodeChoreTime time =
     case time of 
-        DurationInMillis millis ->
+        T.DurationInMillis millis ->
             E.object [("type", E.string "DurationInMillis"), ("amount", E.int millis)]
 
-        PercentageOfTotal percentage ->
+        T.PercentageOfTotal percentage ->
             E.object [("type", E.string "PercentageOfTotal"), ("amount", E.int percentage)]
+
+
+choreTimeDecoder : Decoder T.ChoreTime
+choreTimeDecoder =
+    D.field "type" D.string |> D.andThen
+        (\timeType -> case timeType of
+            "DurationInMillis" ->
+                D.map T.DurationInMillis (D.field "amount" D.int)
+
+            "PercentageOfTotal" ->
+                D.map T.PercentageOfTotal (D.field "amount" D.int)
+
+            _ ->
+                D.fail "Unknown chore time type"
+        )
 
 
 encodeChoreStep : T.ChoreStep -> E.Value
@@ -59,8 +115,17 @@ encodeChoreStep step =
     in
     E.object 
         [("name", E.string step.name)
-        ,("duration", encodedDuration)]
+        ,("duration", encodedDuration)
         ,("incentives", E.list encodeIncentive step.incentives)
+        ]
+
+
+choreStepDecoder : Decoder T.ChoreStep
+choreStepDecoder =
+    D.map3 T.ChoreStep
+        (D.field "name" D.string)
+        (D.field "duration" (D.maybe choreTimeDecoder))
+        (D.field "incentives" (D.list incentiveDecoder))
 
 
 encodeChore : T.Chore -> E.Value
@@ -70,21 +135,76 @@ encodeChore chore =
         ,("name", E.string chore.name)
         ,("reward", encodeChoreReward chore.reward)
         ,("steps", E.list encodeChoreStep chore.steps)
-        ,("durationInMillis", E.int durationInMillis)
+        ,("durationInMillis", Maybe.withDefault E.null (Maybe.map E.int chore.durationInMillis))
         ]
 
 
+choreDecoder : Decoder T.Chore
+choreDecoder =
+    D.map5 T.Chore
+        (D.field "id" D.string)
+        (D.field "name" D.string)
+        (D.field "reward" choreRewardDecoder)
+        (D.field "steps" (D.list choreStepDecoder))
+        (D.field "durationInMillis" (D.maybe D.int))
+
+
+choreStatusDecoder : Decoder T.ChoreStatus
+choreStatusDecoder =
+    D.string |> D.andThen 
+        (\str -> case str of
+            "InProgress" -> 
+                D.succeed T.InProgress
+            "Complete" -> 
+                D.succeed T.Complete
+            _ ->
+                D.fail "Unknown chore attempt status"
+        )
+
+choreActionDecoder : Decoder T.ChoreAction
+choreActionDecoder =
+    D.field "type" D.string |> D.andThen 
+        (\choreActionType -> case choreActionType of
+            "MoveToStep" -> 
+                D.map T.MoveToStep (D.field "step" D.int)
+
+            "CompleteStep" -> 
+                D.succeed T.CompleteStep
+
+            "SkipStep" -> 
+                D.succeed T.SkipStep
+
+            _ ->
+                D.fail "Unknown chore action type"
+        )
+
+
+choreLogDecoder : Decoder T.ChoreLogEntry
+choreLogDecoder =
+    D.map2 (\time action -> (time, action))
+        (D.index 0 posixToMillisDecoder)
+        (D.index 1 choreActionDecoder)
+
+
 choreAttemptDecoder : Decoder T.ChoreAttempt
--- TODO
+choreAttemptDecoder =
+    D.map5 T.ChoreAttempt
+        (D.field "id" D.string)
+        (D.field "chore" choreDecoder)
+        (D.field "status" choreStatusDecoder)
+        (D.field "log" (D.list choreLogDecoder))
+        (D.field "createdAt" posixToMillisDecoder)
+
 
 makeAttemptFromChore : Time.Posix -> T.Chore -> Cmd T.AppMsg
 makeAttemptFromChore currentTime chore =
-    pushChoreAttempt
+    pushChoreAttempt <|
         E.object
             [("chore", encodeChore chore)
             ,("status", E.string "InProgress")
             ,("log", E.list never [])
-            ,("createdAt", E.int (Time.posixToMillis currentTime))]
+            ,("createdAt", E.int (Time.posixToMillis currentTime))
+            ]
 
 
 onChoreAttemptAdded : Sub T.AppMsg
@@ -93,9 +213,9 @@ onChoreAttemptAdded =
         (\jsValue -> 
             case (D.decodeValue choreAttemptDecoder jsValue) of
                 Ok choreAttempt ->
-                    -- TODO
+                    T.NewChoreAttempt choreAttempt
 
                 Err error ->
-                    -- TODO: push error back up
+                    T.BigWhoopsie (D.errorToString error)
         )
 
