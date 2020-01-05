@@ -7,8 +7,9 @@ import Html as H
 import Html.Events
 import Pages.ChoreAttempt
 import Pages.ChoreList
-import Time
 import Ports.Db as Db
+import Time
+
 
 main =
     Browser.element
@@ -35,7 +36,7 @@ init initFlags =
 
 subscriptions : T.AppState -> Sub T.AppMsg
 subscriptions model =
-    Sub.batch 
+    Sub.batch
         [ Time.every 1000 T.TickClock
         , Db.onChoreAttemptAdded
         ]
