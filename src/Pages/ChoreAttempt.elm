@@ -16,14 +16,23 @@ mainView currentTime attempt =
     H.div []
         [ H.h3 [] [ H.text ("In progress: " ++ attempt.chore.name) ]
         , H.h4 [] [ H.text (String.fromInt (attemptState.elapsedMillis // 1000)) ]
-        , stepListView attemptState
+        , stepListView attempt attemptState
         , stepDetailView attempt attemptState
         ]
 
 
-stepListView : T.ChoreAttemptState -> H.Html T.AppMsg
-stepListView attemptState =
-    H.ol [] (List.map (\stepState -> H.li [] [ stepListItemView attemptState stepState ]) attemptState.stepStates)
+stepListView : T.ChoreAttempt -> T.ChoreAttemptState -> H.Html T.AppMsg
+stepListView attempt attemptState =
+    H.ol [] <|
+        List.map
+            (\stepState ->
+                let
+                    navigateEvent =
+                        T.AppendChoreAction attempt [ T.MoveToStep stepState.stepIndex ]
+                in
+                H.li [ HE.onClick navigateEvent ] [ stepListItemView attemptState stepState ]
+            )
+            attemptState.stepStates
 
 
 stepListItemView : T.ChoreAttemptState -> T.ChoreStepState -> H.Html T.AppMsg
