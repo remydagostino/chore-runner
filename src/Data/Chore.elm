@@ -34,10 +34,18 @@ millisBetween from to =
 currentAttemptState : Time.Posix -> ChoreAttempt -> ChoreAttemptState
 currentAttemptState currentTime choreAttempt =
     let
+        endTime =
+            case choreAttempt.status of
+                T.InProgress ->
+                    currentTime
+
+                T.Complete completionTime ->
+                    completionTime
+
         foldedLog =
-            foldForwardLog currentTime choreAttempt
+            foldForwardLog endTime choreAttempt
     in
-    { elapsedMillis = millisBetween choreAttempt.createdAt currentTime
+    { elapsedMillis = millisBetween choreAttempt.createdAt endTime
     , stepStates = List.indexedMap (choreStepToState choreAttempt foldedLog) choreAttempt.chore.steps
     , currentStepIndex = foldedLog.currentStepIndex
     }

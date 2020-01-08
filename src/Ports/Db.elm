@@ -157,17 +157,27 @@ choreDecoder =
         (D.field "durationInMillis" (D.maybe D.int))
 
 
+encodeChoreStatus : T.ChoreStatus -> E.Value
+encodeChoreStatus status =
+    case status of
+        T.InProgress ->
+            E.object [ ( "type", E.string "InProgress" ) ]
+
+        T.Complete completionTime ->
+            E.object [ ( "type", E.string "Complete" ), ( "time", E.int (Time.posixToMillis completionTime) ) ]
+
+
 choreStatusDecoder : Decoder T.ChoreStatus
 choreStatusDecoder =
-    D.string
+    D.field "type" D.string
         |> D.andThen
-            (\str ->
-                case str of
+            (\statusType ->
+                case statusType of
                     "InProgress" ->
                         D.succeed T.InProgress
 
                     "Complete" ->
-                        D.succeed T.Complete
+                        D.map T.Complete (D.field "time" posixToMillisDecoder)
 
                     _ ->
                         D.fail "Unknown chore attempt status"
@@ -216,7 +226,7 @@ makeAttemptFromChore currentTime chore =
     pushChoreAttempt <|
         E.object
             [ ( "chore", encodeChore chore )
-            , ( "status", E.string "InProgress" )
+            , ( "status", encodeChoreStatus T.InProgress )
             , ( "log", E.list never [] )
             , ( "createdAt", E.int (Time.posixToMillis currentTime) )
             ]

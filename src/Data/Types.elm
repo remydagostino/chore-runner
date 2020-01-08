@@ -32,14 +32,16 @@ type AppMsg
     = CreateChoreAttempt Chore
     | NewChoreAttempt ChoreAttempt
     | NavigateToAttempt ChoreAttempt
+    | NavigateToChoreList
     | AppendChoreAction ChoreAttempt (List ChoreAction)
+    | FinalizeAttempt ChoreAttempt
     | TickClock Time.Posix
     | BigWhoopsie String
 
 
 type ChoreStatus
     = InProgress
-    | Complete
+    | Complete Time.Posix
 
 
 type ChoreTime

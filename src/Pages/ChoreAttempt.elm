@@ -15,9 +15,14 @@ mainView currentTime attempt =
     in
     H.div []
         [ H.h3 [] [ H.text ("In progress: " ++ attempt.chore.name) ]
-        , H.h4 [] [ H.text (String.fromInt (attemptState.elapsedMillis // 1000)) ]
+        , H.h4 [] [ H.text <| String.fromInt (attemptState.elapsedMillis // 1000) ++ " elapsed seconds" ]
         , stepListView attempt attemptState
-        , stepDetailView attempt attemptState
+        , case attempt.status of
+            T.InProgress ->
+                stepDetailView attempt attemptState
+
+            T.Complete _ ->
+                finalizedView attempt attemptState
         ]
 
 
@@ -84,8 +89,21 @@ stepDetailView attempt attemptState =
 
         doneStepEvent =
             T.AppendChoreAction attempt (T.CompleteStep :: moveToStepActions)
+
+        isFinalizable =
+            List.all (\s -> List.member s.status [ T.CompletedStep, T.SkippedStep ]) attemptState.stepStates
     in
     H.div []
         [ H.button [ HE.onClick skipStepEvent ] [ H.text "Skip" ]
         , H.button [ HE.onClick doneStepEvent ] [ H.text "Done!" ]
+        , if isFinalizable then
+            H.button [ HE.onClick (T.FinalizeAttempt attempt) ] [ H.text "Finished!" ]
+
+          else
+            H.text ""
         ]
+
+
+finalizedView : T.ChoreAttempt -> T.ChoreAttemptState -> H.Html T.AppMsg
+finalizedView attempt attemptState =
+    H.button [ HE.onClick T.NavigateToChoreList ] [ H.text "Back to list" ]

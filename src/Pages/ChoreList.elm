@@ -17,21 +17,25 @@ mainView chores attempts =
 
 choreView : T.Chore -> List T.ChoreAttempt -> Html.Html T.AppMsg
 choreView chore attempts =
-    case List.filter (\attempt -> attempt.chore == chore) attempts of
-        [] ->
-            Html.li
-                [ Html.Events.onClick (T.CreateChoreAttempt chore) ]
-                [ Html.text chore.name ]
-
-        matchingAttempts ->
-            Html.li []
-                [ Html.text chore.name
-                , Html.ul [] (List.map choreAttemptView matchingAttempts)
-                ]
+    let
+        matchingAttempts =
+            List.filter (\attempt -> attempt.chore == chore) attempts
+    in
+    Html.li
+        []
+        [ Html.div [ Html.Events.onClick (T.CreateChoreAttempt chore) ] [ Html.text chore.name ]
+        , Html.ul [] (List.map choreAttemptView matchingAttempts)
+        ]
 
 
 choreAttemptView : T.ChoreAttempt -> Html.Html T.AppMsg
 choreAttemptView attempt =
     Html.li
         [ Html.Events.onClick (T.NavigateToAttempt attempt) ]
-        [ Html.text "In progress" ]
+        [ case attempt.status of
+            T.InProgress ->
+                Html.text "In progress"
+
+            T.Complete time ->
+                Html.text "Complete"
+        ]

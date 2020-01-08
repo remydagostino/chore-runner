@@ -76,14 +76,32 @@ update msg model =
         T.NavigateToAttempt attempt ->
             ( { model | pageData = T.ChoreAttemptPage attempt.id }, Cmd.none )
 
-        T.TickClock currentTime ->
-            ( { model | currentTime = currentTime }, Cmd.none )
+        T.NavigateToChoreList ->
+            ( { model | pageData = T.ChoreListingPage }, Cmd.none )
 
         T.AppendChoreAction choreAttempt newActions ->
             ( appendAttemptChoreAction model newActions choreAttempt.id, Cmd.none )
 
+        T.FinalizeAttempt attempt ->
+            ( finishChoreAttempt model attempt.id, Cmd.none )
+
+        T.TickClock currentTime ->
+            ( { model | currentTime = currentTime }, Cmd.none )
+
         T.BigWhoopsie err ->
             ( model, Cmd.none )
+
+
+finishChoreAttempt : T.AppState -> T.ChoreAttemptId -> T.AppState
+finishChoreAttempt model attemptId =
+    let
+        modelWithUpdatedAttempt =
+            updateAttemptById
+                model
+                (\attempt -> { attempt | status = T.Complete model.currentTime })
+                attemptId
+    in
+    { modelWithUpdatedAttempt | pageData = T.ChoreListingPage }
 
 
 appendAttemptChoreAction : T.AppState -> List T.ChoreAction -> T.ChoreAttemptId -> T.AppState
