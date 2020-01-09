@@ -73,6 +73,8 @@ choreStepToState choreAttempt foldedLog stepIndex choreStep =
         Maybe.map
             (\millis -> max 0 (millis - aGetWithDefault 0 stepIndex foldedLog.millisSpentPerStep))
             durationInMillis
+    , durationInMillis =
+        durationInMillis
     , status =
         aGetWithDefault T.IdleStep stepIndex foldedLog.statusPerStep
     }
@@ -157,15 +159,77 @@ updateStateWithLog ( logTime, action ) state =
     }
 
 
-percentageOfTotalDuration : T.Chore -> Int -> Int
+percentageOfTotalDuration : T.Chore -> Float -> Int
 percentageOfTotalDuration chore percentage =
-    Maybe.withDefault 0 <| Maybe.map (\dur -> dur // percentage) chore.durationInMillis
+    Maybe.withDefault 0 <| Maybe.map (\dur -> round (toFloat dur * percentage)) chore.durationInMillis
+
+
+sumIncentives : T.ChoreStepState -> Int
+sumIncentives stepState =
+    let
+        timeFactor =
+            Maybe.withDefault 1 <|
+                Maybe.map2
+                    (\total remaining -> toFloat remaining / toFloat total)
+                    stepState.durationInMillis
+                    stepState.millisRemaining
+
+        incentiveStars =
+            List.map
+                (\incentive ->
+                    case incentive of
+                        T.CompletionIncentive stars ->
+                            stars
+
+                        T.HalfTimeIncentive stars ->
+                            if timeFactor >= 0.5 then
+                                stars
+
+                            else
+                                0
+
+                        T.QuarterTimeIncentive stars ->
+                            if timeFactor >= 0.75 then
+                                stars
+
+                            else
+                                0
+                )
+                stepState.choreStep.incentives
+    in
+    case stepState.status of
+        T.CompletedStep ->
+            List.sum incentiveStars
+
+        _ ->
+            0
+
+
+calculateRewardStars : Time.Posix -> T.ChoreAttempt -> Maybe T.StarReceipt
+calculateRewardStars currentTime attempt =
+    let
+        attemptState =
+            currentAttemptState currentTime attempt
+
+        stepStars =
+            List.map sumIncentives attemptState.stepStates
+    in
+    case attempt.status of
+        T.Complete _ ->
+            Just
+                { amount = List.sum stepStars + attempt.chore.reward
+                , reason = T.ChoreCompletionReward attempt.id
+                , createdAt = currentTime
+                }
+
+        T.InProgress ->
+            Nothing
 
 
 standardSpeedIncentives =
-    [ T.CompletionIncentive (T.RewardStars 1)
-    , T.HalfTimeIncentive (T.RewardStars 1)
-    , T.QuarterTimeIncentive (T.RewardStars 1)
+    [ T.CompletionIncentive 1
+    , T.HalfTimeIncentive 1
+    , T.QuarterTimeIncentive 1
     ]
 
 
@@ -173,7 +237,7 @@ basicChores : List Chore
 basicChores =
     [ { id = "1"
       , name = "Get ready for school"
-      , reward = T.NoReward
+      , reward = 0
       , durationInMillis = Just (60 * 1000 * 10)
       , steps =
             [ { name = "Make bed"
@@ -192,7 +256,7 @@ basicChores =
       }
     , { id = "2"
       , name = "Get ready for bed"
-      , reward = T.RewardStars 1
+      , reward = 1
       , durationInMillis = Just (60 * 1000 * 10)
       , steps =
             [ { name = "Clean up mess"
@@ -205,6 +269,52 @@ basicChores =
               }
             , { name = "Brush teeth"
               , duration = Just (T.DurationInMillis (60 * 1000 * 6))
+              , incentives = standardSpeedIncentives
+              }
+            ]
+      }
+    , { id = "3"
+      , name = "Make a cup of tea"
+      , reward = 1
+      , durationInMillis = Just (60 * 1000 * 4)
+      , steps =
+            [ { name = "Fill kettle"
+              , duration = Just (T.PercentageOfTotal 0.2)
+              , incentives = standardSpeedIncentives
+              }
+            , { name = "Boil kettle"
+              , duration = Nothing
+              , incentives = [ T.CompletionIncentive 1 ]
+              }
+            , { name = "Steep tea"
+              , duration = Just (T.PercentageOfTotal 0.4)
+              , incentives = [ T.CompletionIncentive 1 ]
+              }
+            , { name = "Remove tea bag"
+              , duration = Just (T.PercentageOfTotal 0.2)
+              , incentives = standardSpeedIncentives
+              }
+            , { name = "Add milk"
+              , duration = Just (T.PercentageOfTotal 0.2)
+              , incentives = standardSpeedIncentives
+              }
+            ]
+      }
+    , { id = "4"
+      , name = "Empty bins"
+      , reward = 0
+      , durationInMillis = Just (60 * 1000 * 1)
+      , steps =
+            [ { name = "Restmull"
+              , duration = Just (T.PercentageOfTotal 0.2)
+              , incentives = standardSpeedIncentives
+              }
+            , { name = "Werkstoffe"
+              , duration = Just (T.PercentageOfTotal 0.2)
+              , incentives = standardSpeedIncentives
+              }
+            , { name = "Paper & Cardboard"
+              , duration = Just (T.PercentageOfTotal 0.2)
               , incentives = standardSpeedIncentives
               }
             ]

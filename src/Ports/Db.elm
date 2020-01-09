@@ -17,50 +17,17 @@ posixToMillisDecoder =
     D.map Time.millisToPosix D.int
 
 
-encodeChoreReward : T.ChoreReward -> E.Value
-encodeChoreReward reward =
-    case reward of
-        T.RewardStars stars ->
-            E.object [ ( "type", E.string "RewardStars" ), ( "amount", E.int stars ) ]
-
-        T.MoneyReward cents ->
-            E.object [ ( "type", E.string "MoneyReward" ), ( "amount", E.int cents ) ]
-
-        T.NoReward ->
-            E.object [ ( "type", E.string "NoReward" ) ]
-
-
-choreRewardDecoder : Decoder T.ChoreReward
-choreRewardDecoder =
-    D.field "type" D.string
-        |> D.andThen
-            (\choreRewardType ->
-                case choreRewardType of
-                    "RewardStars" ->
-                        D.map T.RewardStars (D.field "amount" D.int)
-
-                    "MoneyReward" ->
-                        D.map T.MoneyReward (D.field "amount" D.int)
-
-                    "NoReward" ->
-                        D.succeed T.NoReward
-
-                    _ ->
-                        D.fail "Unknown chore reward type"
-            )
-
-
 encodeIncentive : T.ChoreIncentive -> E.Value
 encodeIncentive incentive =
     case incentive of
         T.CompletionIncentive reward ->
-            E.object [ ( "type", E.string "CompletionIncentive" ), ( "reward", encodeChoreReward reward ) ]
+            E.object [ ( "type", E.string "CompletionIncentive" ), ( "reward", E.int reward ) ]
 
         T.HalfTimeIncentive reward ->
-            E.object [ ( "type", E.string "HalfTimeIncentive" ), ( "reward", encodeChoreReward reward ) ]
+            E.object [ ( "type", E.string "HalfTimeIncentive" ), ( "reward", E.int reward ) ]
 
         T.QuarterTimeIncentive reward ->
-            E.object [ ( "type", E.string "QuarterTimeIncentive" ), ( "reward", encodeChoreReward reward ) ]
+            E.object [ ( "type", E.string "QuarterTimeIncentive" ), ( "reward", E.int reward ) ]
 
 
 incentiveDecoder : Decoder T.ChoreIncentive
@@ -70,13 +37,13 @@ incentiveDecoder =
             (\incentiveType ->
                 case incentiveType of
                     "CompletionIncentive" ->
-                        D.map T.CompletionIncentive (D.field "reward" choreRewardDecoder)
+                        D.map T.CompletionIncentive (D.field "reward" D.int)
 
                     "HalfTimeIncentive" ->
-                        D.map T.HalfTimeIncentive (D.field "reward" choreRewardDecoder)
+                        D.map T.HalfTimeIncentive (D.field "reward" D.int)
 
                     "QuarterTimeIncentive" ->
-                        D.map T.QuarterTimeIncentive (D.field "reward" choreRewardDecoder)
+                        D.map T.QuarterTimeIncentive (D.field "reward" D.int)
 
                     _ ->
                         D.fail "Unknown chore incentive type"
@@ -90,7 +57,7 @@ encodeChoreTime time =
             E.object [ ( "type", E.string "DurationInMillis" ), ( "amount", E.int millis ) ]
 
         T.PercentageOfTotal percentage ->
-            E.object [ ( "type", E.string "PercentageOfTotal" ), ( "amount", E.int percentage ) ]
+            E.object [ ( "type", E.string "PercentageOfTotal" ), ( "amount", E.float percentage ) ]
 
 
 choreTimeDecoder : Decoder T.ChoreTime
@@ -103,7 +70,7 @@ choreTimeDecoder =
                         D.map T.DurationInMillis (D.field "amount" D.int)
 
                     "PercentageOfTotal" ->
-                        D.map T.PercentageOfTotal (D.field "amount" D.int)
+                        D.map T.PercentageOfTotal (D.field "amount" D.float)
 
                     _ ->
                         D.fail "Unknown chore time type"
@@ -141,7 +108,7 @@ encodeChore chore =
     E.object
         [ ( "id", E.string chore.id )
         , ( "name", E.string chore.name )
-        , ( "reward", encodeChoreReward chore.reward )
+        , ( "reward", E.int chore.reward )
         , ( "steps", E.list encodeChoreStep chore.steps )
         , ( "durationInMillis", Maybe.withDefault E.null (Maybe.map E.int chore.durationInMillis) )
         ]
@@ -152,7 +119,7 @@ choreDecoder =
     D.map5 T.Chore
         (D.field "id" D.string)
         (D.field "name" D.string)
-        (D.field "reward" choreRewardDecoder)
+        (D.field "reward" D.int)
         (D.field "steps" (D.list choreStepDecoder))
         (D.field "durationInMillis" (D.maybe D.int))
 

@@ -24,6 +24,7 @@ type alias AppState =
     { currentTime : Time.Posix
     , chores : List Chore
     , attempts : List ChoreAttempt -- should probably be Array
+    , receipts : List StarReceipt
     , pageData : PageData
     }
 
@@ -46,19 +47,17 @@ type ChoreStatus
 
 type ChoreTime
     = DurationInMillis Int
-    | PercentageOfTotal Int
+    | PercentageOfTotal Float
 
 
-type ChoreReward
-    = RewardStars Int
-    | MoneyReward Int
-    | NoReward
+type alias RewardStars =
+    Int
 
 
 type ChoreIncentive
-    = CompletionIncentive ChoreReward
-    | HalfTimeIncentive ChoreReward
-    | QuarterTimeIncentive ChoreReward
+    = CompletionIncentive RewardStars
+    | HalfTimeIncentive RewardStars
+    | QuarterTimeIncentive RewardStars
 
 
 type ChoreAction
@@ -81,7 +80,7 @@ type alias ChoreStep =
 type alias Chore =
     { id : ChoreId
     , name : String
-    , reward : ChoreReward
+    , reward : RewardStars
     , steps : List ChoreStep
     , durationInMillis : Maybe Int
     }
@@ -106,6 +105,7 @@ type alias ChoreStepState =
     { choreStep : ChoreStep
     , stepIndex : Int
     , millisRemaining : Maybe Int
+    , durationInMillis : Maybe Int
     , status : ChoreStepStatus
     }
 
@@ -114,4 +114,16 @@ type alias ChoreAttemptState =
     { elapsedMillis : Int
     , stepStates : List ChoreStepState
     , currentStepIndex : Int
+    }
+
+
+type ReceiptReason
+    = ChoreCompletionReward ChoreAttemptId
+    | Payout String
+
+
+type alias StarReceipt =
+    { amount : Int
+    , reason : ReceiptReason
+    , createdAt : Time.Posix
     }

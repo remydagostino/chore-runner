@@ -25,6 +25,7 @@ initialState initFlags =
     { currentTime = Time.millisToPosix initFlags.currentTime
     , chores = Data.Chore.basicChores
     , attempts = []
+    , receipts = []
     , pageData = T.ChoreListingPage
     }
 
@@ -46,7 +47,7 @@ view : T.AppState -> H.Html T.AppMsg
 view model =
     case model.pageData of
         T.ChoreListingPage ->
-            Pages.ChoreList.mainView model.chores model.attempts
+            Pages.ChoreList.mainView model
 
         T.ChoreAttemptPage attempt ->
             maybeChoreAttemptPage model attempt (Pages.ChoreAttempt.mainView model.currentTime)
@@ -99,13 +100,30 @@ update msg model =
 finishChoreAttempt : T.AppState -> T.ChoreAttemptId -> T.AppState
 finishChoreAttempt model attemptId =
     let
-        modelWithUpdatedAttempt =
+        model2 =
             updateAttemptById
                 model
                 (\attempt -> { attempt | status = T.Complete model.currentTime })
                 attemptId
+
+        receipt =
+            getAttemptById model2 attemptId
+                |> Maybe.andThen (Data.Chore.calculateRewardStars model2.currentTime)
     in
-    { modelWithUpdatedAttempt | pageData = T.ChoreListingPage }
+    { model2
+        | pageData = T.ChoreListingPage
+        , receipts = appendMaybe model2.receipts receipt
+    }
+
+
+appendMaybe : List a -> Maybe a -> List a
+appendMaybe list maybe =
+    case maybe of
+        Just a ->
+            a :: list
+
+        Nothing ->
+            list
 
 
 appendAttemptChoreAction : T.AppState -> List T.ChoreAction -> T.ChoreAttemptId -> T.AppState
@@ -118,6 +136,11 @@ appendAttemptChoreAction model newActions attemptId =
         model
         (\attempt -> { attempt | log = List.append attempt.log timestampedLogEntries })
         attemptId
+
+
+getAttemptById : T.AppState -> T.ChoreAttemptId -> Maybe T.ChoreAttempt
+getAttemptById model attemptId =
+    List.head <| List.filter (\{ id } -> attemptId == id) model.attempts
 
 
 updateAttemptById : T.AppState -> (T.ChoreAttempt -> T.ChoreAttempt) -> T.ChoreAttemptId -> T.AppState

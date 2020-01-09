@@ -7,12 +7,24 @@ import Html.Events
 import Time
 
 
-mainView : List T.Chore -> List T.ChoreAttempt -> Html.Html T.AppMsg
-mainView chores attempts =
+mainView : T.AppState -> Html.Html T.AppMsg
+mainView { chores, attempts, receipts } =
     Html.div []
-        [ Html.ol [] <|
+        [ starCountView receipts
+        , Html.ol [] <|
             List.map (\chore -> choreView chore attempts) chores
         ]
+
+
+starCountView : List T.StarReceipt -> Html.Html T.AppMsg
+starCountView receipts =
+    let
+        totalStars =
+            List.sum (List.map .amount receipts)
+    in
+    Html.h2
+        []
+        [ Html.text ("Stars: " ++ String.fromInt totalStars) ]
 
 
 choreView : T.Chore -> List T.ChoreAttempt -> Html.Html T.AppMsg
