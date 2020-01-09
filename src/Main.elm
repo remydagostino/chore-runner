@@ -80,7 +80,11 @@ update msg model =
             ( { model | pageData = T.ChoreListingPage }, Cmd.none )
 
         T.AppendChoreAction choreAttempt newActions ->
-            ( appendAttemptChoreAction model newActions choreAttempt.id, Cmd.none )
+            if choreAttempt.status == T.InProgress then
+                ( appendAttemptChoreAction model newActions choreAttempt.id, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         T.FinalizeAttempt attempt ->
             ( finishChoreAttempt model attempt.id, Cmd.none )
