@@ -1,0 +1,14 @@
+/* Potential themes 
+
+  https://coolors.co/31393c-2176ff-33a1fd-fdca40-f79824
+
+  https://coolors.co/ecebe4-cc998d-16f4d0-429ea6-153b50
+
+  https://coolors.co/6699cc-fff275-ff8c42-ff3c38-a23e48
+
+*/
+
+html {
+  font-family: Helvetica, Arial, sans-serif;
+  background-color: hsl(0, 0, 95%);
+}
