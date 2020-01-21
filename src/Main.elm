@@ -5,6 +5,7 @@ import Data.Chore
 import Data.Types as T
 import Html as H
 import Html.Events
+import Html.Attributes as HA
 import Pages.ChoreAttempt
 import Pages.ChoreList
 import Ports.Db as Db
@@ -45,12 +46,16 @@ subscriptions model =
 
 view : T.AppState -> H.Html T.AppMsg
 view model =
-    case model.pageData of
-        T.ChoreListingPage ->
-            Pages.ChoreList.mainView model
+    let 
+        pageView =
+            case model.pageData of
+                T.ChoreListingPage ->
+                    Pages.ChoreList.mainView model
 
-        T.ChoreAttemptPage attempt ->
-            maybeChoreAttemptPage model attempt (Pages.ChoreAttempt.mainView model.currentTime)
+                T.ChoreAttemptPage attempt ->
+                    maybeChoreAttemptPage model attempt (Pages.ChoreAttempt.mainView model.currentTime)
+    in
+    H.div [ HA.class "FullScreenLayout" ] [ pageView ]
 
 
 maybeChoreAttemptPage : T.AppState -> T.ChoreAttemptId -> (T.ChoreAttempt -> H.Html T.AppMsg) -> H.Html T.AppMsg

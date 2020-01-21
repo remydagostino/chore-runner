@@ -4,11 +4,29 @@ import Data.Chore
 import Data.Types as T
 import Html as H
 import Html.Events as HE
+import Html.Attributes as HA
 import Time
-
 
 mainView : Time.Posix -> T.ChoreAttempt -> H.Html T.AppMsg
 mainView currentTime attempt =
+    let
+        attemptState =
+            Data.Chore.currentAttemptState currentTime attempt
+    in
+    H.div [ HA.class "ChoreAttemptPage" ]
+        [ H.div [ HA.class "ChoreAttemptPage-title" ] [ fillTextBox ("In progress: " ++ attempt.chore.name) ]
+        , H.div [ HA.class "ChoreAttemptPage-instruction" ] [ fillTextBox "Current step here" ]
+        , H.div [ HA.class "ChoreAttemptPage-clock" ] [ fillTextBox "Clock goes here" ]
+        , H.div [ HA.class "ChoreAttemptPage-controls" ] [ fillTextBox "Controls down here" ]
+        ]
+
+fillTextBox : String -> H.Html T.AppMsg
+fillTextBox message =
+    H.div [ HA.class "TextBox" ]
+        [ H.div [ HA.class "TextBox-inner"] [ H.text message ] ]
+
+mainViewOLD : Time.Posix -> T.ChoreAttempt -> H.Html T.AppMsg
+mainViewOLD currentTime attempt =
     let
         attemptState =
             Data.Chore.currentAttemptState currentTime attempt

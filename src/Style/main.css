@@ -1,14 +1,67 @@
-/* Potential themes 
-
-  https://coolors.co/31393c-2176ff-33a1fd-fdca40-f79824
-
-  https://coolors.co/ecebe4-cc998d-16f4d0-429ea6-153b50
-
-  https://coolors.co/6699cc-fff275-ff8c42-ff3c38-a23e48
-
+/* All css is processed with pre-css
 */
+
+$color1: hsl(196, 10%, 21%);
+$color2: hsl(217, 100%, 56%);
+$color3: hsl(207, 98%, 60%);
+$color4: hsl(44, 98%, 62%);
+$color5: hsl(33, 93%, 55%);
+
+:root {
+  font-size: 4vmin;
+}
 
 html {
   font-family: Helvetica, Arial, sans-serif;
   background-color: hsl(0, 0, 95%);
 }
+
+body, h1, h2, h3, h4, h5 {
+  margin: 0;
+  padding: 0;
+}
+
+.FullScreenLayout {
+  height: 100vh;
+}
+
+.ChoreAttemptPage {
+  height: 100%;
+}
+
+.ChoreAttemptPage-title {
+  background: $color1;
+  height: 10%;
+}
+
+.ChoreAttemptPage-instruction {
+  background: $color2;
+  height: 25%;
+}
+
+.ChoreAttemptPage-clock {
+  background: $color3;
+  height: 45%;
+}
+
+.ChoreAttemptPage-controls {
+  background: $color4;
+  height: 20%;
+}
+
+.TextBox {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.TextBox-inner {
+  width: 80%;
+  text-align: center;
+  font-size: 1rem;
+}
+
+
+
